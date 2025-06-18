@@ -5,33 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Seguimiento Rutina de Gimnasio</title>
   <style>
-    /* Estilos móviles primero */
+    /* Mobile-first styles */
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
       padding: 1rem;
+      font-family: Arial, sans-serif;
       background: #f5f5f5;
     }
     h1 {
+      font-size: 1.5rem;
       text-align: center;
       margin-bottom: 1rem;
-      font-size: 1.5rem;
     }
     #week-buttons {
       display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
       overflow-x: auto;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
     }
     .week-btn {
       flex: 0 0 auto;
       padding: 0.5rem 1rem;
+      font-size: 0.9rem;
       border: none;
       border-radius: 20px;
       background: #ddd;
       cursor: pointer;
-      font-size: 0.9rem;
+      white-space: nowrap;
     }
     .week-btn.active {
       background: #007bff;
@@ -44,39 +45,36 @@
     }
     .day-section {
       background: #fff;
-      padding: 1rem;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 1rem;
     }
     .day-section h2 {
-      margin: 0 0 0.5rem;
       font-size: 1.2rem;
+      margin: 0 0 0.5rem;
     }
     .category {
-      margin-top: 1rem;
-      font-weight: bold;
       font-size: 1rem;
+      font-weight: bold;
       border-bottom: 2px solid #007bff;
       padding-bottom: 0.25rem;
-    }
-    .exercise {
-      margin-top: 0.75rem;
+      margin-top: 1rem;
     }
     .exercise-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 80px;
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
     }
     .exercise-info {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
-      flex: 1 1 auto;
     }
     .exercise-info .label {
-      font-weight: normal;
       font-size: 0.95rem;
+      color: #333;
     }
     .exercise-info .prev-weight {
       font-size: 0.85rem;
@@ -87,20 +85,13 @@
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 4px;
-      width: 100px;
-      margin-left: 0.5rem;
-      flex: 0 0 auto;
+      width: 100%;
+      box-sizing: border-box;
     }
-    @media(min-width: 600px) {
-      h1 {
-        font-size: 2rem;
-      }
-      .day-section h2 {
-        font-size: 1.4rem;
-      }
-      .exercise-row input {
-        margin-left: 1rem;
-      }
+    @media (min-width: 600px) {
+      h1 { font-size: 2rem; }
+      .day-section h2 { font-size: 1.4rem; }
+      .exercise-row { grid-template-columns: 1fr 100px; }
     }
   </style>
 </head>
@@ -154,88 +145,93 @@
 
     const weeks = ['Semana 1','Semana 2','Semana 3','Semana 4'];
     const routines = {};
-    weeks.forEach(w=> routines[w]=JSON.parse(JSON.stringify(baseRoutine)));
-    let currentWeek='Semana 1';
+    weeks.forEach(w => routines[w] = JSON.parse(JSON.stringify(baseRoutine)));
+    let currentWeek = 'Semana 1';
 
-    function saveWeight(key,val){ localStorage.setItem(`gym_${key}`, val); }
-    function loadWeight(key){ return localStorage.getItem(`gym_${key}`); }
+    function saveWeight(key, val) { localStorage.setItem(`gym_${key}`, val); }
+    function loadWeight(key) { return localStorage.getItem(`gym_${key}`); }
 
-    function renderWeekButtons(){
-      const container = document.getElementById('week-buttons');
-      container.innerHTML = '';
-      weeks.forEach(w=>{ 
-        const btn = document.createElement('button');
-        btn.textContent = w;
-        btn.className = 'week-btn' + (w===currentWeek? ' active':'');
-        btn.onclick = ()=>{ currentWeek=w; renderWeekButtons(); renderExercises(); };
-        container.appendChild(btn);
+    function renderWeekButtons() {
+      const btns = document.getElementById('week-buttons');
+      btns.innerHTML = '';
+      weeks.forEach(w => {
+        const b = document.createElement('button');
+        b.textContent = w;
+        b.className = 'week-btn' + (w === currentWeek ? ' active' : '');
+        b.onclick = () => { currentWeek = w; renderWeekButtons(); renderExercises(); };
+        btns.appendChild(b);
       });
     }
 
-    function renderExercises(){
-      const container = document.getElementById('exercise-list');
-      container.innerHTML = '';
+    function renderExercises() {
+      const list = document.getElementById('exercise-list');
+      list.innerHTML = '';
       const days = routines[currentWeek];
-      Object.entries(days).forEach(([day, cats])=>{
+      Object.entries(days).forEach(([day, cats]) => {
         const section = document.createElement('div');
         section.className = 'day-section';
-        const heading = document.createElement('h2');
-        heading.textContent = day;
-        section.appendChild(heading);
+        const title = document.createElement('h2');
+        title.textContent = day;
+        section.appendChild(title);
 
-        // Categorías
-        [['warmup','Entrada en calor'],['main','Fuerza'],['metabolic','Metabólico']].forEach(([key,label])=>{
-          const catEl = document.createElement('div');
-          catEl.className = 'category';
-          catEl.textContent = label;
-          section.appendChild(catEl);
-          const items = cats[key];
-          items.forEach(item=>{
-            const exRow = document.createElement('div');
-            exRow.className = 'exercise-row';
+        [['warmup','Entrada en calor'],['main','Fuerza'],['metabolic','Metabólico']].forEach(([key,label]) => {
+          const catTitle = document.createElement('div');
+          catTitle.className = 'category';
+          catTitle.textContent = label;
+          section.appendChild(catTitle);
+
+          cats[key].forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'exercise-row';
+
             const info = document.createElement('div');
             info.className = 'exercise-info';
-            const textLabel = document.createElement('div');
-            if(key==='main'){
+            const lbl = document.createElement('div');
+            lbl.className = 'label';
+            if (key === 'main') {
               const reps = item.reps != null ? item.reps : 'FALLO';
-              textLabel.textContent = `${item.name} (${item.sets} x ${reps})`;
+              lbl.textContent = `${item.name} (${item.sets} x ${reps})`;
             } else {
-              textLabel.textContent = item;
+              lbl.textContent = item;
             }
-            textLabel.className = 'label';
-            info.appendChild(textLabel);
-            if(key==='main'){
+            info.appendChild(lbl);
+
+            if (key === 'main') {
               const idx = weeks.indexOf(currentWeek);
-              if(idx>0){
+              if (idx > 0) {
                 const prevKey = `${weeks[idx-1]}_${day}_${item.name}`;
                 const prev = loadWeight(prevKey);
-                if(prev){
-                  const prevEl = document.createElement('div');
-                  prevEl.className = 'prev-weight';
-                  prevEl.textContent = `Anterior: ${prev} kg`;
-                  info.appendChild(prevEl);
+                if (prev) {
+                  const prevDiv = document.createElement('div');
+                  prevDiv.className = 'prev-weight';
+                  prevDiv.textContent = `Anterior: ${prev} kg`;
+                  info.appendChild(prevDiv);
                 }
               }
             }
-            exRow.appendChild(info);
-            if(key==='main'){
-              const input = document.createElement('input');
-              input.type = 'number';
-              input.placeholder = 'Peso (kg)';
-              const keyStr = `${currentWeek}_${day}_${item.name}`;
-              input.value = loadWeight(keyStr) || '';
-              input.onchange = ()=> saveWeight(keyStr, input.value);
-              exRow.appendChild(input);
+            row.appendChild(info);
+
+            if (key === 'main') {
+              const inp = document.createElement('input');
+              inp.type = 'number';
+              inp.placeholder = 'Peso (kg)';
+              const kstr = `${currentWeek}_${day}_${item.name}`;
+              inp.value = loadWeight(kstr) || '';
+              inp.onchange = () => saveWeight(kstr, inp.value);
+              row.appendChild(inp);
             }
-            section.appendChild(exRow);
+
+            section.appendChild(row);
           });
         });
-
-        container.appendChild(section);
+        list.appendChild(section);
       });
     }
 
-    document.addEventListener('DOMContentLoaded',()=>{ renderWeekButtons(); renderExercises(); });
+    document.addEventListener('DOMContentLoaded', () => {
+      renderWeekButtons();
+      renderExercises();
+    });
   </script>
 </body>
 </html>
