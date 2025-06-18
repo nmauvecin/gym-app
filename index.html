@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguimiento Rutina de Gimnasio</title>
+  <style>
+    /* Estilos móviles primero */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    #week-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+    .week-btn {
+      flex: 0 0 auto;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 20px;
+      background: #ddd;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .week-btn.active {
+      background: #007bff;
+      color: #fff;
+    }
+    #exercise-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .day-section {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .day-section h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.2rem;
+    }
+    .category {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1rem;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 0.25rem;
+    }
+    .exercise {
+      margin-top: 0.75rem;
+    }
+    .exercise-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .exercise-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1 1 auto;
+    }
+    .exercise-info .label {
+      font-weight: normal;
+      font-size: 0.95rem;
+    }
+    .exercise-info .prev-weight {
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .exercise-row input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100px;
+      margin-left: 0.5rem;
+      flex: 0 0 auto;
+    }
+    @media(min-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+      .day-section h2 {
+        font-size: 1.4rem;
+      }
+      .exercise-row input {
+        margin-left: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Seguimiento Rutina de Gimnasio</h1>
+  <div id="week-buttons"></div>
+  <div id="exercise-list"></div>
+
+  <script>
+    const baseRoutine = {
+      'DÍA 1': {
+        warmup: ['Plancha tocando al frente','Plancha lateral levantando pierna','Lumbar cruzado'],
+        main: [
+          {name:'Sentadillas',sets:3,reps:6},
+          {name:'Pecho Inclinado',sets:3,reps:8},
+          {name:'Dominadas dorsal',sets:3,reps:null},
+          {name:'Peso Muerto',sets:3,reps:10},
+          {name:'Fondos',sets:3,reps:null},
+          {name:'Máquina Pantorrillas',sets:3,reps:10},
+          {name:'Bíceps con mancuerna',sets:3,reps:10}
+        ],
+        metabolic: ['Cinta (5 min)']
+      },
+      'DÍA 2': {
+        warmup: ['Abdominales buscapiés','Abdominales escuadra','Lumbar nado'],
+        main: [
+          {name:'Peso Muerto',sets:3,reps:5},
+          {name:'Press Militar',sets:3,reps:8},
+          {name:'Remo con máquina',sets:3,reps:12},
+          {name:'Sillón de cuádriceps',sets:3,reps:12},
+          {name:'Aperturas (manc/polea/máq.)',sets:3,reps:12},
+          {name:'Abdominales',sets:3,reps:12},
+          {name:'Extensión de tríceps',sets:3,reps:12}
+        ],
+        metabolic: ['Bicicleta (5 min)','30 seg pesado / 30 seg liviano']
+      },
+      'DÍA 3': {
+        warmup: ['Plancha moviendo la cadera','Lumbar nado','Abdominales abrazo rodillas'],
+        main: [
+          {name:'Estocadas caminando',sets:3,reps:10},
+          {name:'Pecho Plano',sets:3,reps:8},
+          {name:'Dominadas supino',sets:3,reps:null},
+          {name:'Elevación de pelvis',sets:3,reps:12},
+          {name:'Face Pull',sets:3,reps:12},
+          {name:'Vuelos Laterales',sets:3,reps:10},
+          {name:'Camilla Isquios',sets:3,reps:10}
+        ],
+        metabolic: ['Abd rueda y lumbar']
+      }
+    };
+
+    const weeks = ['Semana 1','Semana 2','Semana 3','Semana 4'];
+    const routines = {};
+    weeks.forEach(w=> routines[w]=JSON.parse(JSON.stringify(baseRoutine)));
+    let currentWeek='Semana 1';
+
+    function saveWeight(key,val){ localStorage.setItem(`gym_${key}`, val); }
+    function loadWeight(key){ return localStorage.getItem(`gym_${key}`); }
+
+    function renderWeekButtons(){
+      const container = document.getElementById('week-buttons');
+      container.innerHTML = '';
+      weeks.forEach(w=>{ 
+        const btn = document.createElement('button');
+        btn.textContent = w;
+        btn.className = 'week-btn' + (w===currentWeek? ' active':'');
+        btn.onclick = ()=>{ currentWeek=w; renderWeekButtons(); renderExercises(); };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderExercises(){
+      const container = document.getElementById('exercise-list');
+      container.innerHTML = '';
+      const days = routines[currentWeek];
+      Object.entries(days).forEach(([day, cats])=>{
+        const section = document.createElement('div');
+        section.className = 'day-section';
+        const heading = document.createElement('h2');
+        heading.textContent = day;
+        section.appendChild(heading);
+
+        // Categorías
+        [['warmup','Entrada en calor'],['main','Fuerza'],['metabolic','Metabólico']].forEach(([key,label])=>{
+          const catEl = document.createElement('div');
+          catEl.className = 'category';
+          catEl.textContent = label;
+          section.appendChild(catEl);
+          const items = cats[key];
+          items.forEach(item=>{
+            const exRow = document.createElement('div');
+            exRow.className = 'exercise-row';
+            const info = document.createElement('div');
+            info.className = 'exercise-info';
+            const textLabel = document.createElement('div');
+            if(key==='main'){
+              const reps = item.reps != null ? item.reps : 'FALLO';
+              textLabel.textContent = `${item.name} (${item.sets} x ${reps})`;
+            } else {
+              textLabel.textContent = item;
+            }
+            textLabel.className = 'label';
+            info.appendChild(textLabel);
+            if(key==='main'){
+              const idx = weeks.indexOf(currentWeek);
+              if(idx>0){
+                const prevKey = `${weeks[idx-1]}_${day}_${item.name}`;
+                const prev = loadWeight(prevKey);
+                if(prev){
+                  const prevEl = document.createElement('div');
+                  prevEl.className = 'prev-weight';
+                  prevEl.textContent = `Anterior: ${prev} kg`;
+                  info.appendChild(prevEl);
+                }
+              }
+            }
+            exRow.appendChild(info);
+            if(key==='main'){
+              const input = document.createElement('input');
+              input.type = 'number';
+              input.placeholder = 'Peso (kg)';
+              const keyStr = `${currentWeek}_${day}_${item.name}`;
+              input.value = loadWeight(keyStr) || '';
+              input.onchange = ()=> saveWeight(keyStr, input.value);
+              exRow.appendChild(input);
+            }
+            section.appendChild(exRow);
+          });
+        });
+
+        container.appendChild(section);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{ renderWeekButtons(); renderExercises(); });
+  </script>
+</body>
+</html>
